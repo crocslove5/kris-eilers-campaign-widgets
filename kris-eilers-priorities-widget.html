@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Priorities — Kris Eilers Campaign</title>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:transparent;font-family:'Roboto',sans-serif}
+body{padding:12px;display:flex;align-items:flex-start;justify-content:center}
+.wrap{background:#fff;border:1px solid #dadce0;border-radius:12px;overflow:hidden;width:100%;max-width:520px}
+.head{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #e8eaed}
+.head-icon{width:30px;height:30px;background:#e8f5ee;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.head-icon svg{width:16px;height:16px}
+.head-title{font-family:'Google Sans',sans-serif;font-size:15px;font-weight:500;color:#202124}
+.loading{padding:24px 20px;text-align:center;font-size:13px;color:#9aa0a6}
+.error-msg{padding:16px 20px;font-size:13px;color:#c5221f;background:#fce8e6}
+.task-list{padding:0 4px}
+.task{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f1f3f4;transition:background .1s}
+.task:last-child{border-bottom:none}
+.task:hover{background:#f8f9fa}
+.cb{width:18px;height:18px;border:2px solid #dadce0;border-radius:3px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cb.done{background:#1e6b3c;border-color:#1e6b3c}
+.cb.done::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);display:block}
+.cb.saving{opacity:.5;pointer-events:none}
+.task-label{font-size:14px;color:#202124;flex:1;line-height:1.4;transition:all .15s}
+.task-label.done{color:#9aa0a6;text-decoration:line-through}
+.chip{font-size:11px;font-weight:500;border-radius:10px;padding:3px 9px;flex-shrink:0;white-space:nowrap}
+.chip-green{background:#e8f5ee;color:#1e6b3c}
+.chip-blue{background:#e8f0fe;color:#1a73e8}
+.chip-amber{background:#fef7e0;color:#b46000}
+.chip-red{background:#fce8e6;color:#c5221f}
+.chip-purple{background:#f3e8fd;color:#8430ce}
+.chip-gray{background:#f1f3f4;color:#5f6368}
+.footer{padding:10px 20px 14px;border-top:1px solid #f1f3f4}
+.add-btn{font-size:13px;font-weight:500;color:#1a73e8;background:none;border:none;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px;font-family:inherit}
+.add-btn:hover{opacity:.75}
+.add-form{display:none;margin-top:10px;gap:8px;flex-direction:column}
+.add-form.visible{display:flex}
+.add-row{display:flex;gap:8px}
+.add-input{flex:1;padding:8px 12px;border:1px solid #dadce0;border-radius:6px;font-size:13px;font-family:inherit;outline:none;color:#202124}
+.add-input:focus{border-color:#1a73e8}
+.add-select{padding:8px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;font-family:inherit;outline:none;color:#202124;background:#fff;cursor:pointer}
+.add-select:focus{border-color:#1a73e8}
+.btn-row{display:flex;gap:8px;justify-content:flex-end}
+.btn-cancel{font-size:13px;font-weight:500;color:#5f6368;background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:4px;font-family:inherit}
+.btn-cancel:hover{background:#f1f3f4}
+.btn-save{font-size:13px;font-weight:500;color:#fff;background:#1e6b3c;border:none;cursor:pointer;padding:6px 14px;border-radius:4px;font-family:inherit}
+.btn-save:hover{background:#155a30}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+.empty{padding:20px;text-align:center;font-size:13px;color:#9aa0a6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="head-icon">
+      <svg fill="none" stroke="#1e6b3c" stroke-width="2" viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="12" rx="1.5"/><path d="M4 7l2.5 2.5L12 5"/></svg>
+    </div>
+    <div class="head-title">Priorities this week</div>
+  </div>
+  <div id="task-container"><div class="loading">Loading tasks...</div></div>
+  <div class="footer">
+    <button class="add-btn" onclick="showAddForm()">+ Add priority</button>
+    <div class="add-form" id="add-form">
+      <div class="add-row">
+        <input class="add-input" id="new-task" placeholder="Describe the task..." maxlength="120">
+        <select class="add-select" id="new-cat">
+          <option value="General">General</option>
+          <option value="Volunteers">Volunteers</option>
+          <option value="Social">Social</option>
+          <option value="Events">Events</option>
+          <option value="Setup">Setup</option>
+          <option value="Website">Website</option>
+          <option value="Outreach">Outreach</option>
+          <option value="Press">Press</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="hideAddForm()">Cancel</button>
+        <button class="btn-save" id="save-btn" onclick="addTask()">Add task</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxl0m7_YDRJ6MKieki-BuitVae8G_tqqiYkdfP7zWPW1K4ZETRgNTqlcpolnisTAcet/exec';
+const CHIP = {
+  'Volunteers':'chip-green','Events':'chip-green','Outreach':'chip-green',
+  'Setup':'chip-blue','Press':'chip-blue',
+  'Social':'chip-amber',
+  'Website':'chip-red',
+  'General':'chip-gray'
+};
+function chipClass(cat){ return CHIP[cat] || 'chip-gray'; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function loadTasks(){
+  const el = document.getElementById('task-container');
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=get', {cache:'no-store'});
+    const data = await res.json();
+    const open = (data.tasks || []).filter(t => !t.done);
+    if(open.length === 0){
+      el.innerHTML = '<div class="empty">No open priorities. Add one below.</div>';
+      return;
+    }
+    el.innerHTML = '<div class="task-list">' +
+      open.map(t =>
+        `<div class="task">
+          <div class="cb" onclick="toggleTask(${t.row},this)"></div>
+          <div class="task-label">${esc(t.task)}</div>
+          <span class="chip ${chipClass(t.category)}">${esc(t.category)}</span>
+        </div>`
+      ).join('') +
+    '</div>';
+  } catch(e){
+    el.innerHTML = '<div class="error-msg">Could not load tasks. Make sure the Apps Script URL is set correctly in the widget file.</div>';
+  }
+}
+async function toggleTask(row, cbEl){
+  cbEl.classList.add('saving');
+  try {
+    await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'done', row}),
+      headers:{'Content-Type':'application/json'}
+    });
+    cbEl.classList.remove('saving');
+    cbEl.classList.add('done');
+    const lbl = cbEl.nextElementSibling;
+    if(lbl) lbl.classList.add('done');
+    setTimeout(loadTasks, 700);
+  } catch(e){
+    cbEl.classList.remove('saving');
+  }
+}
+async function addTask(){
+  const taskEl = document.getElementById('new-task');
+  const catEl  = document.getElementById('new-cat');
+  const btn    = document.getElementById('save-btn');
+  const task   = taskEl.value.trim();
+  if(!task) return;
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  try {
+    await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'add', task, category: catEl.value}),
+      headers:{'Content-Type':'application/json'}
+    });
+    taskEl.value = '';
+    hideAddForm();
+    loadTasks();
+  } catch(e){
+    btn.textContent = 'Error. Try again.';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Add task';
+}
+function showAddForm(){
+  document.getElementById('add-form').classList.add('visible');
+  document.getElementById('new-task').focus();
+}
+function hideAddForm(){
+  document.getElementById('add-form').classList.remove('visible');
+  document.getElementById('new-task').value = '';
+}
+loadTasks();
+setInterval(loadTasks, 30000);
+</script>
+</body>
+</html>
